@@ -1,65 +1,51 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { NewTodoForm } from "./NewTodoForm";
+import { TodoList } from "./TodoList";
 import "./styles.css";
 
 export default function App() {
-  // useState returns an array with two items: the new item and a function to set the new item
-  const [newItem, setNewItem] = useState("");
-  const [todos, setTodos] = useState([]);
+  const [todos, setTodos] = useState(() => {
+    const localValue = localStorage.getItem("ITEMS");
+    if (localValue == null) return [];
 
-  // handleSubmit is a function that takes an event as an argument
-  function handleSubmit(e) {
-    e.preventDefault();
-    // setTodos is a function that takes a function as an argument
-    setTodos((currentTodos) => {
-      return [
-        // currentTodos is an array of objects
-        ...currentTodos,
-        // the new object has a random id, the title is the value of newItem, and completed is false
-        { id: crypto.randomUUID(), title: newItem, completed: false },
-      ];
-    });
+    return JSON.parse(localValue);
+  });
+
+  useEffect(() => {
+    localStorage.setItem("ITEMS", JSON.stringify(todos));
+  }, [todos]);
+
+  function addTodo(title) {
     setTodos((currentTodos) => {
       return [
         ...currentTodos,
-        { id: crypto.randomUUID(), title: newItem, completed: false },
+        { id: crypto.randomUUID(), title, completed: false },
       ];
     });
   }
 
-  // handleSubmit is a function that takes an event as an argument
+  function toggleTodo(id, completed) {
+    setTodos((currentTodos) => {
+      return currentTodos.map((todo) => {
+        if (todo.id === id) {
+          return { ...todo, completed };
+        }
+        return todo;
+      });
+    });
+  }
+
+  function deleteTodo(id) {
+    setTodos((currentTodos) => {
+      return currentTodos.filter((todo) => todo.id !== id);
+    });
+  }
+
   return (
-    // the fragment <> </> is a way to return multiple elements without wrapping them in a div
     <>
+      <NewTodoForm onSubmit={addTodo} />
       <h1 className="header">Todo List</h1>
-      <form onSubmit={handleSubmit} className="new-item-form">
-        <div className="form-row">
-          <label htmlFor="item">New Item</label>
-          <input
-            value={newItem}
-            // onChange takes an event as an argument and sets the value of newItem to the value of the input
-            onChange={(e) => setNewItem(e.target.value)}
-            type="text"
-            id="item"
-          />
-        </div>
-        <button className="btn">Add</button>
-      </form>
-      <h1 className="header">Todo List</h1>
-      <ul className="list">
-        <li>
-          <label>
-            <input type="checkbox" />
-            Item 1
-          </label>
-          <button className="btn btn-danger">Delete</button>
-        </li>
-        <li>
-          <label>
-            <input type="checkbox" />
-            Item 2<button className="btn btn-danger">Delete</button>
-          </label>
-        </li>
-      </ul>
+      <TodoList todos={todos} toggleTodo={toggleTodo} deleteTodo={deleteTodo} />
     </>
   );
 }
